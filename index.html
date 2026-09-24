@@ -1,289 +1,66 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Swing Lab | スイング軌道解析</title><meta name="description" content="動画上でバット軌道、手元、肩・ひじ・腰・膝・足の骨格を確認。元映像とマーカー表示を切り替えるスイング解析。"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a1930'/%3E%3Cpath d='M6 24Q16 4 27 10' stroke='%235ce4c0' stroke-width='3' fill='none'/%3E%3Cpath d='M12 24L24 8' stroke='%23ffd477' stroke-width='4'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css"><meta name="theme-color" content="#0a1930">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Swing Lab">
-<style>
-/* ===== Swing Lab mobile layer ===== */
-:root{
-  --mobile-gap:12px;
-  --tap:48px;
-}
-*{box-sizing:border-box}
-html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
-body{margin:0;min-width:0;overflow-x:hidden;-webkit-tap-highlight-color:transparent;}
-button,input,select,label{font:inherit;}
-button,.file-button,.subtle{touch-action:manipulation;}
-canvas{max-width:100%;height:auto;display:block;touch-action:none;}
-img,video{max-width:100%;}
-
-/* iPhone / Android landscape & portrait safety */
-body{
-  padding-left:env(safe-area-inset-left);
-  padding-right:env(safe-area-inset-right);
-}
-header{
-  padding-top:max(10px, env(safe-area-inset-top));
-}
-footer{
-  padding-bottom:max(14px, env(safe-area-inset-bottom));
-}
-
-/* Make the existing desktop UI robust even if the base CSS is narrow */
-main,.workspace,aside,.panel,.stage,.transport,.stage-foot,.view-tabs,.range-fields,.pair{
-  min-width:0;
-}
-#filename{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
-.stage{overflow:hidden;}
-#canvas{width:100%;height:auto;}
-.timeline{width:100%;}
-button,select,input[type="number"],.file-button,.subtle{
-  min-height:44px;
-}
-
-@media (max-width: 820px){
-  body{font-size:15px;}
-  header{
-    position:sticky;
-    top:0;
-    z-index:30;
-    display:flex !important;
-    align-items:center;
-    justify-content:space-between;
-    gap:10px;
-    padding-left:14px !important;
-    padding-right:14px !important;
-    padding-bottom:10px !important;
-    backdrop-filter:blur(12px);
-    -webkit-backdrop-filter:blur(12px);
-  }
-  .brand{min-width:0;}
-  .brand small{display:none !important;}
-  header>.file-button{
-    flex:0 0 auto;
-    min-height:44px;
-    display:inline-flex;
-    align-items:center;
-    justify-content:center;
-    padding:0 14px !important;
-    white-space:nowrap;
-  }
-
-  main{
-    display:block !important;
-    width:100% !important;
-    max-width:none !important;
-    margin:0 !important;
-    padding:10px 10px calc(18px + env(safe-area-inset-bottom)) !important;
-  }
-  .workspace,aside{
-    width:100% !important;
-    max-width:none !important;
-    margin:0 !important;
-  }
-  aside{
-    display:block !important;
-    margin-top:12px !important;
-  }
-  .panel{
-    margin:0 0 12px !important;
-    padding:16px !important;
-    border-radius:16px !important;
-  }
-
-  .stage-head{
-    display:flex !important;
-    align-items:center;
-    gap:8px;
-    padding:10px 2px !important;
-  }
-  #filename{flex:1 1 auto;}
-  .badge{flex:0 0 auto;font-size:11px;}
-
-  .view-tabs{
-    display:grid !important;
-    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
-    gap:6px !important;
-    width:100%;
-    margin-bottom:8px !important;
-  }
-  .view-tabs button{
-    width:100% !important;
-    min-width:0 !important;
-    min-height:44px;
-    padding:8px 4px !important;
-    font-size:12px !important;
-    line-height:1.2;
-  }
-
-  .stage{
-    width:100% !important;
-    border-radius:14px !important;
-    aspect-ratio:3/2;
-    min-height:0 !important;
-    position:relative;
-  }
-  #canvas{
-    width:100% !important;
-    height:100% !important;
-    object-fit:contain;
-  }
-  #empty{
-    padding:18px 14px !important;
-    text-align:center;
-  }
-  #empty h1{
-    font-size:clamp(20px,6vw,28px) !important;
-    line-height:1.2;
-    margin:8px 0 !important;
-  }
-  #empty p{margin:7px 0 !important;}
-  #empty .file-button{
-    display:flex !important;
-    width:min(100%,280px) !important;
-    margin:14px auto 8px !important;
-    align-items:center;
-    justify-content:center;
-    min-height:50px;
-  }
-
-  .transport{
-    display:grid !important;
-    grid-template-columns:1fr 1.15fr 1fr !important;
-    gap:8px !important;
-    align-items:center;
-    margin-top:10px !important;
-  }
-  .transport button{
-    width:100% !important;
-    min-width:0 !important;
-    min-height:50px;
-    padding:8px 4px !important;
-  }
-  #time{
-    grid-column:1 / 3;
-    order:5;
-    text-align:left;
-    font-variant-numeric:tabular-nums;
-    padding:2px 2px;
-  }
-  #speed{
-    grid-column:3;
-    order:6;
-    width:100% !important;
-    min-height:44px;
-  }
-  .timeline{
-    margin:10px 0 6px !important;
-    min-height:34px;
-    accent-color:currentColor;
-  }
-
-  .stage-foot{
-    display:flex !important;
-    flex-wrap:wrap;
-    gap:8px 10px;
-    align-items:center;
-    justify-content:space-between;
-    padding-top:8px !important;
-  }
-  .stage-foot>span{
-    flex:1 1 180px;
-    font-size:12px;
-    line-height:1.6;
-  }
-  #snapshot{
-    flex:1 1 150px;
-    min-height:46px;
-  }
-  #status{
-    font-size:12px !important;
-    line-height:1.55;
-    overflow-wrap:anywhere;
-  }
-
-  .section-title{display:flex !important;align-items:center;gap:10px;}
-  .section-title h2{font-size:18px !important;}
-  .switch-row{
-    min-height:50px;
-    display:flex !important;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-  }
-  .switch-row input[type="checkbox"]{
-    width:22px;
-    height:22px;
-    flex:0 0 auto;
-  }
-  .wide{
-    width:100% !important;
-    min-height:50px !important;
-  }
-  .range-fields{
-    display:grid !important;
-    grid-template-columns:1fr 1fr !important;
-    gap:10px !important;
-  }
-  .range-fields label{min-width:0;}
-  .range-fields input{
-    width:100% !important;
-    min-height:48px;
-    font-size:16px; /* prevent iOS auto zoom */
-  }
-  #point{
-    width:100% !important;
-    min-height:50px;
-    font-size:16px;
-  }
-  .pair{
-    display:grid !important;
-    grid-template-columns:1fr 1fr !important;
-    gap:8px !important;
-  }
-  .pair button{
-    width:100% !important;
-    min-width:0 !important;
-    min-height:50px;
-    padding-left:8px !important;
-    padding-right:8px !important;
-  }
-  progress{width:100%;height:14px;}
-  #counts{display:block;margin-top:10px;}
-  .muted{line-height:1.55;}
-
-  footer{
-    margin:0 !important;
-    padding-left:16px !important;
-    padding-right:16px !important;
-    font-size:11px !important;
-    line-height:1.5;
-    text-align:center;
-  }
-}
-
-@media (max-width: 380px){
-  header{padding-left:10px !important;padding-right:10px !important;}
-  .brand{font-size:14px !important;}
-  header>.file-button{padding:0 10px !important;font-size:13px;}
-  main{padding-left:8px !important;padding-right:8px !important;}
-  .view-tabs button{font-size:11px !important;}
-  .transport{gap:6px !important;}
-  .transport button{font-size:13px !important;}
-}
-
-@media (orientation: landscape) and (max-height: 560px){
-  header{position:static;}
-  .stage{aspect-ratio:16/9;}
-}
-
-@media (prefers-reduced-motion: reduce){
-  *,*::before,*::after{scroll-behavior:auto !important;transition:none !important;animation:none !important;}
-}
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Swing Lab | スイング軌道解析</title><meta name="description" content="動画上でバット軌道、手元、肩・ひじ・腰・膝・足の骨格を確認。元映像とマーカー表示を切り替えるスイング解析。"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a1930'/%3E%3Cpath d='M6 24Q16 4 27 10' stroke='%235ce4c0' stroke-width='3' fill='none'/%3E%3Cpath d='M12 24L24 8' stroke='%23ffd477' stroke-width='4'/%3E%3C/svg%3E"><style>:root{color-scheme:dark;--bg:#071120;--panel:#101f33;--stroke:#293a51;--text:#edf3fc;--muted:#9cadc4;--mint:#5ce4c0}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.65 'Segoe UI','Meiryo',sans-serif}button,input,select{font:inherit}button,.file-button,.subtle{border:1px solid var(--stroke);border-radius:8px;background:#182b42;color:var(--text);padding:9px 14px;cursor:pointer;display:inline-block;text-align:center;font-size:14px;line-height:1.5}button:hover,.file-button:hover{border-color:var(--mint);background:#203a50}button:disabled{opacity:.4;cursor:not-allowed}button.active,button[aria-pressed=true]{background:#284c54;border-color:var(--mint);color:#adffe7}.primary,.file-button{background:var(--mint);color:#082824;border-color:var(--mint);font-weight:700}.primary:hover,.file-button:hover{background:#89f6d8;color:#082824}.brand{font-size:23px;font-weight:800;letter-spacing:2px;color:white;text-decoration:none}.brand span{color:var(--mint)}.brand small{display:inline-block;font-size:14px;font-weight:400;letter-spacing:0;color:var(--muted);margin-left:20px}header{max-width:1500px;margin:auto;padding:22px 32px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--stroke)}main{max-width:1500px;margin:28px auto;display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:24px;padding:0 32px}.workspace{min-width:0;position:sticky;top:16px;align-self:start}.stage-head{display:flex;justify-content:space-between;gap:16px;margin-bottom:16px;font-size:14px}#filename{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.badge{font-size:12px;color:var(--mint);white-space:nowrap;letter-spacing:1px}.view-tabs{display:flex;gap:8px;margin-bottom:12px}.view-tabs button{flex:1}.stage{height:clamp(380px,62vh,760px);position:relative;background:#06172e;border:1px solid var(--stroke);border-radius:12px;overflow:hidden;display:flex;align-items:center;justify-content:center}canvas{display:block;max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;touch-action:none}#empty{position:absolute;text-align:center;padding:24px;max-width:620px}.empty-symbol{font-size:60px;color:var(--mint);line-height:1}h1{font-size:clamp(22px,2.5vw,32px);font-weight:600;margin:20px 0 12px}p{margin:10px 0;font-size:14px}.muted{color:var(--muted);font-size:13px;line-height:1.8}.transport{display:flex;align-items:center;gap:8px;margin-top:14px}.transport output{margin-left:auto;font-variant-numeric:tabular-nums;font-size:14px;white-space:nowrap}select{color:var(--text);background:#13263b;border:1px solid var(--stroke);padding:8px;border-radius:7px;max-width:100%}input[type=range]{accent-color:var(--mint);width:100%;margin:18px 0 6px}.stage-foot{display:flex;justify-content:space-between;align-items:center;font-size:14px;gap:12px}.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 5px 0 12px}.red{background:#ff6678}.blue{background:#50d6ff}.mint{background:var(--mint)}#status{color:#b9cadf;border-top:1px solid var(--stroke);margin-top:15px;padding-top:12px;min-height:44px}.panel{background:var(--panel);border:1px solid var(--stroke);border-radius:12px;padding:20px;margin-bottom:14px}.section-title{display:flex;align-items:center;gap:10px;margin-bottom:12px}.section-title span{font-size:12px;color:var(--mint);border:1px solid #335f60;border-radius:5px;padding:1px 5px}h2{font-size:17px;margin:0}.switch-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;font-size:14px;gap:12px}input[type=checkbox]{accent-color:var(--mint);width:20px;height:20px;cursor:pointer}.wide{display:block;width:100%;margin-top:10px}.pair{display:flex;gap:8px;margin-top:10px}.pair button{flex:1;font-size:13px;padding:8px}.range-fields{display:flex;gap:12px;margin:12px 0}.range-fields label{min-width:0;flex:1;font-size:13px;color:var(--muted)}input[type=number]{width:100%;display:block;background:#081728;color:white;border:1px solid var(--stroke);border-radius:6px;padding:7px;margin-top:5px}progress{width:100%;accent-color:var(--mint);margin-top:12px}#counts{font-size:13px;color:var(--mint)}footer{max-width:1500px;padding:0 32px 28px;margin:auto;font-size:13px;color:var(--muted)}.subtle{background:transparent;color:var(--muted)}:focus-visible{outline:3px solid #ffd477;outline-offset:3px}[hidden]{display:none!important}@media(max-width:920px){main{grid-template-columns:minmax(0,1fr);padding:0 16px;margin-top:18px}.workspace{position:static}.stage{height:60vh}aside{display:grid;grid-template-columns:1fr 1fr;gap:12px}.panel{margin:0}header{padding:18px 16px}.brand small{display:none}footer{padding:20px 16px}}@media(max-width:560px){aside{grid-template-columns:1fr}.view-tabs{gap:4px}.view-tabs button{padding:10px 4px;font-size:13px}.transport{flex-wrap:wrap}.transport button{padding:8px}.transport output{font-size:13px}.stage-foot{flex-wrap:wrap}.stage{height:58vh;min-height:330px}header .file-button{font-size:13px;padding:9px}.brand{font-size:20px}}
 </style></head>
-<body><header><a class="brand" href="./">SWING<span>LAB</span><small>スイング軌道解析</small></a><button id="choose-media" type="button" class="file-button">動画を選ぶ</button><input id="file" type="file" accept="video/*,image/*" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true"></header>
-<main><section class="workspace"><div class="stage-head"><span id="filename">動画を読み込んで始めましょう</span><span class="badge">2D ANALYSIS</span></div><div class="view-tabs" role="group" aria-label="表示モード"><button data-view="overlay" class="active" aria-pressed="true">映像 ＋ マーカー</button><button data-view="original" aria-pressed="false">元の映像</button><button data-view="markers" aria-pressed="false">マーカーだけ</button></div><div class="stage" id="stage"><canvas id="canvas" width="960" height="640" aria-label="解析映像。位置指定モードでタップするとマーカーを追加します"></canvas><div id="empty"><div class="empty-symbol">↗</div><h1>スイングを、見えるかたちに。</h1><p>動画や写真を開き、骨格と軌道を重ねて確認できます。</p><button id="choose-media-empty" type="button" class="file-button">動画を選ぶ</button><input id="empty-file" type="file" accept="video/*,image/*" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true"><p class="muted">ファイルはこの端末で処理します。サーバーへ送信しません。</p></div></div><div class="transport"><button id="back" title="0.1秒戻る" disabled>−0.1秒</button><button id="play" class="primary" disabled>再生</button><button id="next" title="0.1秒進む" disabled>＋0.1秒</button><output id="time">00.00 / 00.00</output><select id="speed" aria-label="再生速度"><option value="0.25">0.25倍</option><option value="0.5">0.5倍</option><option value="1" selected>1倍</option></select></div><input id="seek" class="timeline" type="range" min="0" max="1" step="0.01" value="0" aria-label="動画の再生位置" disabled><div class="stage-foot"><span><i class="dot red"></i>先端 <i class="dot blue"></i>手元 <i class="dot mint"></i>骨格</span><button id="snapshot" disabled>表示を画像保存</button></div><p id="status" role="status" aria-live="polite">MP4・MOVなど、ブラウザーで再生できる動画に対応。</p></section>
-<aside><section class="panel"><div class="section-title"><span>01</span><h2>表示するもの</h2></div><label class="switch-row">バット先端の軌道<input id="show-tip" type="checkbox" checked></label><label class="switch-row">手元の位置・軌道<input id="show-hand" type="checkbox" checked></label><label class="switch-row">半透明のスイング面<input id="show-ribbon" type="checkbox" checked></label><label class="switch-row">骨格マーカー<input id="show-pose" type="checkbox" checked></label><label class="switch-row">解析情報を動画に表示<input id="show-hud" type="checkbox" checked></label><p class="muted">肩・ひじ・手首・腰・膝・足首・つま先</p></section>
-<section class="panel"><div class="section-title"><span>02</span><h2>骨格を検出</h2></div><p>複数人が映るときは、打者の腰付近を選択してください。</p><button id="person" class="wide" disabled>打者を選択する</button><div class="range-fields"><label>開始（秒）<input id="from" type="number" min="0" step="0.1" value="0"></label><label>終了（秒）<input id="to" type="number" min="0" step="0.1" value="10"></label></div><button id="analyze" class="primary wide" disabled>骨格を自動検出</button><button id="cancel" class="wide" hidden>検出を中止</button><progress id="progress" max="1" value="0" hidden></progress><p class="muted">初回は検出モデルを読み込みます。速い動きや重なりは補正してください。</p></section>
-<section class="panel"><div class="section-title"><span>03</span><h2>バット先端を追跡</h2></div><div class="tip-guide"><b>おすすめ手順</b><span>① 骨格を検出</span><span>② スイング開始付近で先端を1回タップ</span><span>③ 「先端を自動追跡」を押す</span></div><label for="point">指定・補正する場所</label><select id="point" class="wide"><option value="tip">バット先端</option><option value="hand">手元（グリップ）</option><optgroup label="骨格の補正"><option value="11">左肩</option><option value="12">右肩</option><option value="13">左ひじ</option><option value="14">右ひじ</option><option value="15">左手首</option><option value="16">右手首</option><option value="23">左腰</option><option value="24">右腰</option><option value="25">左膝</option><option value="26">右膝</option><option value="27">左足首</option><option value="28">右足首</option><option value="31">左つま先</option><option value="32">右つま先</option></optgroup></select><button id="mark" class="wide" disabled>映像をタップして指定・補正</button><button id="track-tip" class="primary wide" disabled>バット先端を自動追跡</button><progress id="tip-progress" max="1" value="0" hidden></progress><p id="tip-track-note" class="muted">高速スイングは30fps相当で追跡します。外れた場所だけ先端をタップして補正し、もう一度自動追跡すると補正点を優先します。</p><div class="pair"><button id="missing" disabled>この位置は見えない</button><button id="undo" disabled>1つ戻す</button></div><output id="counts">先端 0点 / 手元 0点</output></section>
-<section class="panel compact"><button id="save" class="wide" disabled>解析データを保存</button><label class="subtle wide">解析データを読み込む<input id="load" type="file" accept="application/json,.json" hidden></label><button id="record" class="wide" disabled>選択区間を動画保存</button><p class="muted">動画保存は無音です。対応ブラウザーではMP4、その他はWebMで保存します。元映像の音声は含みません。</p></section></aside></main><footer>画面上の2次元表示です。奥行き・カメラ移動は補正せず、速度や角度の実測には使いません。骨格は推定値です。</footer><video id="video" playsinline preload="auto" hidden></video><script type="module" src="./app.js"></script></body></html>
+<body><header><a class="brand" href="./">SWING<span>LAB</span><small>スイング軌道解析</small></a><label class="file-button">動画・写真を開く<input id="file" type="file" accept="video/*,image/*" hidden></label></header>
+<main><section class="workspace"><div class="stage-head"><span id="filename">動画を読み込んで始めましょう</span><span class="badge">2D ANALYSIS</span></div><div class="view-tabs" role="group" aria-label="表示モード"><button data-view="overlay" class="active" aria-pressed="true">映像 ＋ マーカー</button><button data-view="original" aria-pressed="false">元の映像</button><button data-view="markers" aria-pressed="false">マーカーだけ</button></div><div class="stage" id="stage"><canvas id="canvas" width="960" height="640" aria-label="解析映像。位置指定モードでタップするとマーカーを追加します"></canvas><div id="empty"><div class="empty-symbol">↗</div><h1>スイングを、見えるかたちに。</h1><p>動画や写真を開き、骨格と軌道を重ねて確認できます。</p><label class="file-button">ファイルを選択<input id="empty-file" type="file" accept="video/*,image/*" hidden></label><p class="muted">ファイルはこの端末で処理します。サーバーへ送信しません。</p></div></div><div class="transport"><button id="back" title="1コマ戻る" disabled>−1/30秒</button><button id="play" class="primary" disabled>再生</button><button id="next" title="1コマ進む" disabled>＋1/30秒</button><output id="time">00.00 / 00.00</output><select id="speed" aria-label="再生速度"><option value="0.25">0.25倍</option><option value="0.5">0.5倍</option><option value="1" selected>1倍</option></select></div><input id="seek" class="timeline" type="range" min="0" max="1" step="0.01" value="0" aria-label="動画の再生位置" disabled><div class="stage-foot"><span><i class="dot red"></i>先端 <i class="dot blue"></i>手元 <i class="dot mint"></i>骨格</span><button id="snapshot" disabled>表示を画像保存</button></div><p id="status" role="status" aria-live="polite">MP4・MOVなど、ブラウザーで再生できる動画に対応。</p></section>
+<aside><section class="panel"><div class="section-title"><span>01</span><h2>表示するもの</h2></div><label class="switch-row">バット先端の軌道<input id="show-tip" type="checkbox" checked></label><label class="switch-row">手元の位置・軌道<input id="show-hand" type="checkbox" checked></label><label class="switch-row">半透明のスイング面<input id="show-ribbon" type="checkbox" checked></label><label class="switch-row">骨格マーカー<input id="show-pose" type="checkbox" checked></label><p class="muted">肩・ひじ・手首・腰・膝・足首・つま先</p></section>
+<section class="panel"><div class="section-title"><span>02</span><h2>骨格を検出</h2></div><p>打者の頭から足までをドラッグで囲みます。骨格はこの範囲だけで検出します。</p><button id="person" class="wide" disabled>打者の全身を囲む</button><div class="range-fields"><label>開始（秒）<input id="from" type="number" min="0" step="0.1" value="0"></label><label>終了（秒）<input id="to" type="number" min="0" step="0.1" value="10"></label></div><p id="roi-status" class="muted">打者の範囲：未選択</p><button id="analyze" class="primary wide" disabled>骨格を自動検出</button><button id="cancel" class="wide" hidden>検出を中止</button><progress id="progress" max="1" value="0" hidden></progress><p class="muted">初回は検出モデルを読み込みます。速い動きや重なりは補正してください。</p></section>
+<section class="panel"><div class="section-title"><span>03</span><h2>位置を指定・補正</h2></div><label for="point">指定する場所</label><select id="point" class="wide"><option value="tip">バット先端</option><option value="hand">手元（グリップ）</option><optgroup label="骨格の補正"><option value="11">左肩</option><option value="12">右肩</option><option value="13">左ひじ</option><option value="14">右ひじ</option><option value="15">左手首</option><option value="16">右手首</option><option value="23">左腰</option><option value="24">右腰</option><option value="25">左膝</option><option value="26">右膝</option><option value="27">左足首</option><option value="28">右足首</option><option value="31">左つま先</option><option value="32">右つま先</option></optgroup></select><button id="mark" class="wide" disabled>映像をタップして指定</button><div class="pair"><button id="missing" disabled>この位置は見えない</button><button id="undo" disabled>1つ戻す</button></div><p class="muted">先端と手元を同じ時刻で指定し、補助追跡を開始します。見失った位置で停止して再指定します。骨格の手首をグリップ位置の代わりには使いません。左右は本人から見た方向です。</p><button id="track" class="primary wide" disabled>指定した先端・手元を補助追跡</button><p class="muted">追跡は現在位置から終了時刻まで。完全自動ではなく、結果の確認・補正が必要です。</p><label class="switch-row">軌道の全体を表示<input id="show-all" type="checkbox" checked></label><p id="ribbon-status" class="muted">金色の面には先端・手元の両方の位置が必要です。</p><output id="counts">先端 0点 / 手元 0点</output></section>
+<section class="panel compact"><button id="save" class="wide" disabled>解析データを保存</button><label class="subtle wide">解析データを読み込む<input id="load" type="file" accept="application/json,.json" hidden></label><button id="record" class="wide" disabled>選択区間を動画保存</button><p class="muted">動画保存は無音のWebM形式です。元映像の音声は含みません。</p></section></aside></main><footer>画面上の2次元表示です。奥行き・カメラ移動は補正せず、速度や角度の実測には使いません。骨格は推定値です。</footer><video id="video" playsinline preload="auto" hidden></video><script type="module">const $=id=>document.getElementById(id),video=$('video'),canvas=$('canvas'),ctx=canvas.getContext('2d');
+const joints=[11,12,13,14,15,16,23,24,25,26,27,28,31,32],edges=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[27,31],[24,26],[26,28],[28,32]];
+let media=null,image=null,url=null,mode='overlay',editing=false,picking=false,target=null,roi=null,dragStart=null,dragEnd=null,busy=false,cancelled=false,recording=false,recorder=null,pose=[],marks={tip:[],hand:[]},corrections={},history=[];
+const colors={tip:'#ff6678',hand:'#50d6ff'},now=()=>media?.kind==='image'?0:video.currentTime,timekey=t=>Math.round(t*1000),status=s=>$('status').textContent=s;
+function state(){return{version:1,media,marks,pose,corrections,target,roi};}function remember(){history.push(JSON.stringify({marks,corrections}));if(history.length>100)history.shift();$('undo').disabled=false;}
+function buttons(){const loaded=!!media;for(const id of ['person','analyze','mark','missing','snapshot','save','track'])$(id).disabled=!loaded||busy||recording;for(const id of ['play','back','next','seek'])$(id).disabled=!loaded||media.kind==='image'||busy||recording;$('track').disabled=!loaded||media?.kind==='image'||busy||recording;$('record').disabled=!loaded||media.kind==='image'||busy||recording||!window.MediaRecorder;$('file').disabled=busy||recording;$('empty-file').disabled=busy||recording;$('load').disabled=!loaded||busy||recording;$('from').disabled=$('to').disabled=media?.kind==='image'||busy||recording;$('speed').disabled=busy||recording;$('undo').disabled=!history.length||busy||recording;}
+function counts(){$('counts').textContent=`先端 ${marks.tip.filter(x=>x.p).length}点 / 手元 ${marks.hand.filter(x=>x.p).length}点`;}
+async function openFile(file){if(!file||busy||recording)return;video.pause();if(url)URL.revokeObjectURL(url);url=URL.createObjectURL(file);media=null;pose=[];marks={tip:[],hand:[]};corrections={};history=[];target=null;roi=null;$('roi-status').textContent='打者の範囲：未選択';editing=picking=false;setEditUI();image=null;buttons();try{let w,h,d,kind;if(file.type.startsWith('image/')){image=new Image();image.src=url;await image.decode();w=image.naturalWidth;h=image.naturalHeight;d=0;kind='image';}else{await new Promise((resolve,reject)=>{video.onloadeddata=resolve;video.onerror=()=>reject(new Error('この動画形式は再生できません。H.264のMP4でお試しください。'));video.src=url;video.load();});w=video.videoWidth;h=video.videoHeight;d=video.duration;kind='video';if(!Number.isFinite(d))throw new Error('動画の長さを取得できませんでした。');}media={name:file.name,width:w,height:h,duration:d,kind};const scale=Math.min(1,1280/Math.max(w,h));canvas.width=Math.round(w*scale);canvas.height=Math.round(h*scale);$('filename').textContent=file.name;$('empty').hidden=true;$('seek').max=d||1;$('seek').value=0;$('from').value=0;$('to').value=Math.min(15,d).toFixed(1);$('from').disabled=$('to').disabled=kind==='image';buttons();counts();draw();status('骨格を検出するか、「位置を指定」でバット先端をタップしてください。');}catch(e){media=null;image=null;$('empty').hidden=false;buttons();status(e.message);}}
+for(const id of ['file','empty-file'])$(id).onchange=e=>openFile(e.target.files[0]);
+function nearestPose(t){let lo=0,hi=pose.length;while(lo<hi){const m=(lo+hi)>>1;if(pose[m].t<t)lo=m+1;else hi=m;}let best=null,dist=.16;for(const i of [lo-1,lo]){const item=pose[i];if(item&&Math.abs(item.t-t)<dist){dist=Math.abs(item.t-t);best=item;}}return {...(best?.points||{}),...(corrections[timekey(t)]||{})};}
+function interpolate(list,t){if(!list.length)return null;const exact=list.find(x=>Math.abs(x.t-t)<.006);if(exact)return exact.p;let a=null,b=null;for(const item of list){if(item.t<t)a=item;else{b=item;break;}}if(!a||!b||!a.p||!b.p||b.t-a.t>.501)return null;const k=(t-a.t)/(b.t-a.t);return{x:a.p.x+(b.p.x-a.p.x)*k,y:a.p.y+(b.p.y-a.p.y)*k};}
+function handAt(t){return interpolate(marks.hand,t);}
+const xy=p=>[p.x*canvas.width,p.y*canvas.height];function line(a,b,color,width=2){ctx.beginPath();ctx.moveTo(...xy(a));ctx.lineTo(...xy(b));ctx.strokeStyle=color;ctx.lineWidth=width;ctx.stroke();}function dot(p,color,r=5){ctx.beginPath();ctx.arc(...xy(p),r,0,Math.PI*2);ctx.fillStyle=color;ctx.fill();ctx.strokeStyle='#efffff';ctx.lineWidth=1.5;ctx.stroke();}
+function grid(){ctx.fillStyle='#071b36';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.strokeStyle='#183654';ctx.lineWidth=1;for(let x=0;x<canvas.width;x+=canvas.width/12){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,canvas.height);ctx.stroke();}for(let y=0;y<canvas.height;y+=canvas.height/16){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(canvas.width,y);ctx.stroke();}}
+function draw(){if(!media){grid();return;}const t=now(),w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);if(mode==='markers')grid();else if(image)ctx.drawImage(image,0,0,w,h);else if(video.readyState>=2)ctx.drawImage(video,0,0,w,h);if(mode!=='original'){
+ const start=Math.max(0,Number($('from').value)||0),stop=Math.min($('show-all').checked?media.duration:t,Number($('to').value)||t),samples=[];for(let s=start;s<=stop+.001;s+=.05)samples.push({tip:interpolate(marks.tip,s),hand:handAt(s)});if(t>=start&&t<=stop+.05)samples.push({tip:interpolate(marks.tip,t),hand:handAt(t)});
+ let faces=0;if($('show-ribbon').checked){ctx.fillStyle='rgba(255,213,119,.28)';for(let i=1;i<samples.length;i++){const a=samples[i-1],b=samples[i];if(a.tip&&a.hand&&b.tip&&b.hand){ctx.beginPath();ctx.moveTo(...xy(a.hand));ctx.lineTo(...xy(a.tip));ctx.lineTo(...xy(b.tip));ctx.lineTo(...xy(b.hand));ctx.closePath();ctx.fill();faces++;if(i%3===0)line(b.hand,b.tip,'rgba(255,231,164,.45)',1);}}}
+ $('ribbon-status').textContent=faces?'金色の面：先端とグリップの位置から表示中':'金色の面：両方の点が揃う区間がありません。同じ時刻で2点を指定してください。';for(const name of ['tip','hand'])if($('show-'+name).checked){for(let i=1;i<samples.length;i++)if(samples[i-1][name]&&samples[i][name])line(samples[i-1][name],samples[i][name],colors[name],3);const p=name==='tip'?interpolate(marks.tip,t):handAt(t);if(p)dot(p,colors[name],6);}
+ if($('show-pose').checked){const pts=nearestPose(t);for(const[a,b]of edges)if(pts[a]&&pts[b])line(pts[a],pts[b],'#5ce4c0',Math.max(3,w/180));for(const id of joints)if(pts[id])dot(pts[id],'#acffe8',Math.max(4,w/140));}
+ }drawSelection();$('seek').value=t;$('time').textContent=`${t.toFixed(2)} / ${media.duration.toFixed(2)}`;}
+function setView(next){if(!['overlay','original','markers'].includes(next))throw new Error('不明な表示モードです');mode=next;document.querySelectorAll('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===mode);b.setAttribute('aria-pressed',String(b.dataset.view===mode));});draw();}document.querySelectorAll('[data-view]').forEach(b=>b.onclick=()=>setView(b.dataset.view));for(const id of ['show-tip','show-hand','show-ribbon','show-pose','show-all'])$(id).onchange=draw;
+$('play').onclick=()=>{if(video.paused)video.play().catch(e=>status(e.message));else video.pause();};video.onplay=()=>$('play').textContent='一時停止';video.onpause=()=>$('play').textContent='再生';video.ontimeupdate=draw;video.onseeked=draw;$('speed').onchange=()=>{video.playbackRate=Number($('speed').value);};$('seek').oninput=()=>{video.pause();video.currentTime=Number($('seek').value);};for(const [id,delta]of [['back',-1/30],['next',1/30]])$(id).onclick=()=>{video.pause();video.currentTime=Math.min(media.duration,Math.max(0,now()+delta));};function tick(){if(!video.paused)draw();requestAnimationFrame(tick);}tick();
+function setEditUI(){$('mark').classList.toggle('active',editing);$('mark').textContent=editing?'指定中：映像をタップ（再押下で終了）':'映像をタップして指定';$('person').classList.toggle('active',picking);canvas.style.cursor=editing||picking?'crosshair':'default';}
+$('mark').onclick=()=>{editing=!editing;picking=false;video.pause();if(editing)setView('overlay');setEditUI();};$('person').onclick=()=>{picking=!picking;editing=false;video.pause();if(picking){setView('overlay');status('打者の頭から足までをドラッグで囲んでください。周りの人を含めないようにします。');}setEditUI();};
+function put(p){remember();const t=now(),key=$('point').value;if(key==='tip'||key==='hand'){marks[key]=marks[key].filter(x=>Math.abs(x.t-t)>.006);marks[key].push({t,p});marks[key].sort((a,b)=>a.t-b.t);}else{const k=timekey(t);corrections[k]??={};corrections[k][key]=p;}counts();draw();status(p?'位置を記録しました。次の時刻へ進めて続けられます。':'この時刻を欠測として記録しました。');}
+function pointerPosition(e){const r=canvas.getBoundingClientRect();return{x:Math.max(0,Math.min(1,(e.clientX-r.left)/r.width)),y:Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))};}
+function rectangle(a,b){return{x:Math.min(a.x,b.x),y:Math.min(a.y,b.y),w:Math.abs(a.x-b.x),h:Math.abs(a.y-b.y)};}
+function drawSelection(){const box=dragStart&&dragEnd?rectangle(dragStart,dragEnd):roi;if(!box||(!picking&&mode==='original'))return;ctx.save();ctx.strokeStyle='#ffd477';ctx.lineWidth=2;ctx.setLineDash([8,5]);ctx.strokeRect(box.x*canvas.width,box.y*canvas.height,box.w*canvas.width,box.h*canvas.height);ctx.restore();}
+canvas.onpointerdown=e=>{if(!media||busy||recording)return;if(picking){canvas.setPointerCapture(e.pointerId);dragStart=dragEnd=pointerPosition(e);}else if(editing)put(pointerPosition(e));};
+canvas.onpointermove=e=>{if(dragStart){dragEnd=pointerPosition(e);draw();}};
+canvas.onpointerup=e=>{if(!dragStart)return;const box=rectangle(dragStart,pointerPosition(e));dragStart=dragEnd=null;if(box.w<.06||box.h<.12){status('打者の頭から足まで囲むように、大きめの枠をドラッグしてください。');draw();return;}roi=box;target={x:box.x+box.w*.5,y:box.y+box.h*.52};pose=[];corrections={};picking=false;$('roi-status').textContent='打者の範囲：固定済み（黄色の枠）';setEditUI();status('打者の範囲を固定しました。骨格はこの枠の中だけで再検出します。');draw();};
+canvas.onpointercancel=()=>{dragStart=dragEnd=null;draw();};
+$('missing').onclick=()=>put(null);$('undo').onclick=()=>{const previous=history.pop();if(previous){Object.assign(marks,JSON.parse(previous).marks);corrections=JSON.parse(previous).corrections;counts();draw();buttons();}};
+function seekTo(t){return new Promise((resolve,reject)=>{if(Math.abs(video.currentTime-t)<.0001&&video.readyState>=2)return resolve();const timer=setTimeout(()=>{video.removeEventListener('seeked',done);reject(new Error('動画の読み取りがタイムアウトしました。'));},15000);function done(){clearTimeout(timer);resolve();}video.addEventListener('seeked',done,{once:true});video.currentTime=t;});}
+function interval(){const a=Number($('from').value),b=Number($('to').value);if(!Number.isFinite(a)||!Number.isFinite(b)||a<0||b<=a||b>media.duration+.1||b-a>60)throw new Error('開始・終了を動画の範囲内で指定してください。1回の解析は60秒以内です。');return[a,Math.min(b,media.duration)];}
+$('cancel').onclick=()=>{cancelled=true;};
+$('analyze').onclick=async()=>{if(!media||busy)return;if(!roi){status('先に「打者の全身を囲む」で解析対象の人を指定してください。');return;}let detector;const original=now();try{const[a,b]=media.kind==='image'?[0,0]:interval();busy=true;cancelled=false;video.pause();editing=picking=false;setEditUI();buttons();$('cancel').hidden=false;$('progress').hidden=false;$('progress').value=0;status('打者専用の骨格検出モデルを読み込んでいます…');const{FilesetResolver,PoseLandmarker}=await import('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.32/vision_bundle.mjs');const files=await FilesetResolver.forVisionTasks('https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.32/wasm');detector=await PoseLandmarker.createFromOptions(files,{baseOptions:{modelAssetPath:'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task'},runningMode:media.kind==='image'?'IMAGE':'VIDEO',numPoses:1,minPoseDetectionConfidence:.55,minPosePresenceConfidence:.55,minTrackingConfidence:.6});let found=0,lastCenter=null,lastTorso=null;const crop=document.createElement('canvas'),c=crop.getContext('2d');const scale=Math.min(1,640/Math.max(roi.w*media.width,roi.h*media.height));crop.width=Math.max(64,Math.round(roi.w*media.width*scale));crop.height=Math.max(64,Math.round(roi.h*media.height*scale));const total=media.kind==='image'?1:Math.ceil((b-a)*15);let processed=0;
+for(let i=0;i<total&&!cancelled;i++){const t=media.kind==='image'?0:Math.min(b-.001,a+i/15);if(!image)await seekTo(t);c.drawImage(image||video,roi.x*media.width,roi.y*media.height,roi.w*media.width,roi.h*media.height,0,0,crop.width,crop.height);const result=image?detector.detect(crop):detector.detectForVideo(crop,i*1000/15+1);const selected=result.landmarks?.[0];const pts={};if(selected){const hip={x:(selected[23].x+selected[24].x)/2,y:(selected[23].y+selected[24].y)/2};const shoulder={x:(selected[11].x+selected[12].x)/2,y:(selected[11].y+selected[12].y)/2};const torso=Math.hypot(hip.x-shoulder.x,hip.y-shoulder.y);const core=[11,12,23,24].every(id=>(selected[id].visibility??0)>.55);const inside=hip.x>.05&&hip.x<.95&&hip.y>.2&&hip.y<.88&&shoulder.x>0&&shoulder.x<1&&shoulder.y>0&&shoulder.y<.7;const continuity=!lastCenter||(Math.hypot(hip.x-lastCenter.x,hip.y-lastCenter.y)<.12&&torso/lastTorso>.65&&torso/lastTorso<1.5);if(core&&inside&&torso>.1&&torso<.65&&continuity){for(const id of joints){const p=selected[id];if((p.visibility??0)>.55&&p.x>=0&&p.x<=1&&p.y>=0&&p.y<=1)pts[id]={x:roi.x+p.x*roi.w,y:roi.y+p.y*roi.h};}lastCenter=hip;lastTorso=torso;found++;}}pose=pose.filter(x=>Math.abs(x.t-t)>.02);pose.push({t,points:pts});pose.sort((a,b)=>a.t-b.t);processed++;$('progress').value=processed/total;status(`打者の範囲だけを検出中 ${Math.round(processed/total*100)}%`);draw();await new Promise(r=>setTimeout(r,0));}status(`${cancelled?'中止しました。':'骨格検出が完了しました。'} ${processed}枚中${found}枚を採用。信頼度や動きの条件を満たさないフレームは欠測です。`);
+}catch(e){console.error(e);status('検出できませんでした。'+e.message);}finally{detector?.close();busy=false;$('cancel').hidden=true;$('progress').hidden=true;if(media?.kind==='video')await seekTo(original).catch(()=>{});buttons();draw();}};
+function download(blob,name){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);}
+$('snapshot').onclick=()=>{draw();canvas.toBlob(b=>{if(b)download(b,'swing-'+now().toFixed(2)+'.png');},'image/png');};$('save').onclick=()=>download(new Blob([JSON.stringify(state(),null,2)],{type:'application/json'}),'swing-analysis.json');
+$('load').onchange=async e=>{try{if(!media)throw new Error('先に元の動画・写真を開いてください。');const file=e.target.files[0];if(!file)return;if(file.size>20*1024*1024)throw new Error('データが大きすぎます。');const d=JSON.parse(await file.text());if(d.version!==1||d.media?.name!==media.name||d.media?.width!==media.width||d.media?.height!==media.height||Math.abs(d.media.duration-media.duration)>.15)throw new Error('この映像の解析データではありません。');const validP=p=>p===null||(p&&Number.isFinite(p.x)&&Number.isFinite(p.y)&&Math.abs(p.x)<=4&&Math.abs(p.y)<=4);const validT=t=>Number.isFinite(t)&&t>=0&&t<=media.duration+.1;if(!d.marks||!['tip','hand'].every(k=>Array.isArray(d.marks[k])&&d.marks[k].every(x=>validT(x.t)&&validP(x.p)))||!Array.isArray(d.pose)||!d.pose.every(x=>validT(x.t)&&x.points&&Object.entries(x.points).every(([k,p])=>joints.includes(+k)&&validP(p)))||!d.corrections||!Object.entries(d.corrections).every(([k,v])=>validT(+k/1000)&&v&&Object.entries(v).every(([id,p])=>joints.includes(+id)&&validP(p)))||!validP(d.target))throw new Error('解析データの形式が正しくありません。');if(d.roi&&(!['x','y','w','h'].every(k=>Number.isFinite(d.roi[k]))||d.roi.x<0||d.roi.y<0||d.roi.w<=0||d.roi.h<=0||d.roi.x+d.roi.w>1.001||d.roi.y+d.roi.h>1.001))throw new Error('人物の範囲が正しくありません。');roi=d.roi||null;$('roi-status').textContent=roi?'打者の範囲：固定済み':'打者の範囲：未選択';marks=d.marks;for(const list of Object.values(marks))list.sort((a,b)=>a.t-b.t);pose=d.pose;corrections=d.corrections;target=d.target;history=[];counts();buttons();draw();status('解析データを読み込みました。');}catch(e){status(e.message);}e.target.value='';};
+$('record').onclick=async()=>{if(!media||busy||recording)return;let stream;const original=now(),oldSpeed=video.playbackRate;try{const[a,b]=interval();const mime=['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'].find(x=>MediaRecorder.isTypeSupported(x));if(!mime)throw new Error('このブラウザーではWebM保存が使えません。');video.pause();recording=true;buttons();await seekTo(a);draw();stream=canvas.captureStream(30);recorder=new MediaRecorder(stream,{mimeType:mime});const chunks=[];recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data);};const done=new Promise((resolve,reject)=>{recorder.onstop=resolve;recorder.onerror=e=>reject(e.error||new Error('録画エラー'));});video.playbackRate=1;recorder.start();await video.play();status('動画を保存中です。この画面を開いたままお待ちください。');await new Promise(resolve=>{const id=setInterval(()=>{if(video.currentTime>=b||video.ended){clearInterval(id);resolve();}},30);});video.pause();recorder.stop();await done;download(new Blob(chunks,{type:mime}),'swing-analysis.webm');status('選択区間を無音のWebM動画で保存しました。');}catch(e){status(e.message);}finally{if(recorder?.state==='recording')recorder.stop();stream?.getTracks().forEach(t=>t.stop());video.pause();video.playbackRate=oldSpeed;recording=false;await seekTo(original).catch(()=>{});buttons();draw();}};
+const modelContext=document.modelContext;if(modelContext?.registerTool){try{Promise.resolve(modelContext.registerTool({name:'set_swing_display',description:'スイング解析の表示モードを切り替える',inputSchema:{type:'object',properties:{mode:{type:'string',enum:['overlay','original','markers']}},required:['mode'],additionalProperties:false},annotations:{readOnlyHint:false},execute(input){setView(input.mode);return{mode};}})).catch(console.warn);}catch(e){console.warn(e);}}
+grid();
+let cvLoading=null;
+async function loadCV(){if(cvLoading)return cvLoading;cvLoading=new Promise((resolve,reject)=>{const timer=setTimeout(()=>{cvLoading=null;reject(new Error('追跡ライブラリの読み込みが時間切れになりました。'));},60000);const ready=lib=>{if(!lib?.Mat)return;clearTimeout(timer);if(Object.prototype.hasOwnProperty.call(lib,'then'))delete lib.then;resolve(lib);};const done=()=>{const lib=window.cv;if(lib?.Mat)ready(lib);else if(typeof lib?.then==='function')lib.then(ready);else if(lib)lib.onRuntimeInitialized=()=>ready(lib);else{clearTimeout(timer);cvLoading=null;reject(new Error('OpenCVを読み込めませんでした。'));}};if(window.cv)done();else{const script=document.createElement('script');script.src='https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js';script.onload=done;script.onerror=()=>{clearTimeout(timer);cvLoading=null;reject(new Error('追跡ライブラリを取得できません。通信を確認してください。'));};document.head.append(script);}});return cvLoading;}
+function patch(gray,p){const values=[];const x=Math.round(p.x*gray.cols),y=Math.round(p.y*gray.rows);for(let j=-5;j<=5;j++)for(let i=-5;i<=5;i++){const xx=x+i,yy=y+j;if(xx<0||yy<0||xx>=gray.cols||yy>=gray.rows)return null;values.push(gray.data[yy*gray.cols+xx]);}const mean=values.reduce((a,b)=>a+b,0)/values.length;let norm=0;for(let i=0;i<values.length;i++){values[i]-=mean;norm+=values[i]*values[i];}if(norm<200)return null;norm=Math.sqrt(norm);return values.map(x=>x/norm);}
+function correlation(a,b){return a&&b?a.reduce((sum,x,i)=>sum+x*b[i],0):-1;}
+function flowPoint(cv,prev,next,p,reference){const mats=[];const mat=()=>{const m=new cv.Mat();mats.push(m);return m;};try{const values=[];for(const y of [-3,0,3])for(const x of [-3,0,3])values.push(p.x*prev.cols+x,p.y*prev.rows+y);const p0=cv.matFromArray(9,1,cv.CV_32FC2,values);mats.push(p0);const p1=mat(),st=mat(),err=mat(),back=mat(),bs=mat(),be=mat();const win=new cv.Size(21,21),criteria=new cv.TermCriteria(cv.TermCriteria_COUNT+cv.TermCriteria_EPS,30,.01);cv.calcOpticalFlowPyrLK(prev,next,p0,p1,st,err,win,3,criteria);cv.calcOpticalFlowPyrLK(next,prev,p1,back,bs,be,win,3,criteria);const dx=[],dy=[];for(let i=0;i<9;i++){const fb=Math.hypot(back.data32F[i*2]-values[i*2],back.data32F[i*2+1]-values[i*2+1]);if(st.data[i]&&bs.data[i]&&fb<1.3&&err.data32F[i]<22){dx.push(p1.data32F[i*2]-values[i*2]);dy.push(p1.data32F[i*2+1]-values[i*2+1]);}}if(dx.length<5)return null;dx.sort((a,b)=>a-b);dy.sort((a,b)=>a-b);const x=dx[Math.floor(dx.length/2)],y=dy[Math.floor(dy.length/2)];if(Math.hypot(x,y)>Math.max(prev.cols,prev.rows)*.12)return null;const q={x:p.x+x/prev.cols,y:p.y+y/prev.rows};let best=-1,match=null;for(let xx=-3;xx<=3;xx++)for(let yy=-3;yy<=3;yy++){const candidate={x:q.x+xx/next.cols,y:q.y+yy/next.rows};const score=correlation(reference,patch(next,candidate));if(score>best){best=score;match=candidate;}}if(!match||match.x<=0||match.x>=1||match.y<=0||match.y>=1||best<.45)return null;return match;}finally{for(const m of mats)m.delete();}}
+$('track').onclick=async()=>{if(!media||media.kind==='image'||busy)return;let cv,prev=null;const original=now();let stoppedAt=original,reason='';try{const[,end]=interval();if(original>=end-.02)throw new Error('終了時刻より前のフレームに移動してください。');const initial={tip:interpolate(marks.tip,original),hand:interpolate(marks.hand,original)};if(!initial.tip||!initial.hand)throw new Error('同じ開始フレームで、バット先端とグリップの2点を指定してください。');remember();busy=true;cancelled=false;video.pause();editing=picking=false;setEditUI();buttons();$('cancel').hidden=false;$('progress').hidden=false;$('progress').value=0;status('先端・グリップの追跡を準備しています…');cv=await loadCV();const buffer=document.createElement('canvas'),bc=buffer.getContext('2d');const scale=Math.min(1,960/Math.max(media.width,media.height));buffer.width=Math.round(media.width*scale);buffer.height=Math.round(media.height*scale);function capture(){bc.drawImage(video,0,0,buffer.width,buffer.height);const rgba=cv.imread(buffer),gray=new cv.Mat();cv.cvtColor(rgba,gray,cv.COLOR_RGBA2GRAY);rgba.delete();return gray;}await seekTo(original);prev=capture();let current=initial;let refs={tip:patch(prev,initial.tip),hand:patch(prev,initial.hand)};if(!refs.tip||!refs.hand)throw new Error('指定点の模様を読み取れません。先端・グリップの輪郭付近を指定してください。');const manual={tip:marks.tip.filter(x=>x.source!=='flow'),hand:marks.hand.filter(x=>x.source!=='flow')};for(const key of ['tip','hand'])marks[key]=marks[key].filter(x=>x.source!=='flow'||x.t<=original||x.t>end);const total=Math.ceil((end-original)*30);let n=0;
+for(let i=1;i<=total&&!cancelled;i++){const t=Math.min(end-.001,original+i/30);await seekTo(t);const next=capture();let lost=[];const proposed={};for(const key of ['tip','hand']){const anchor=manual[key].find(x=>Math.abs(x.t-t)<.006);if(anchor){proposed[key]=anchor.p;if(anchor.p)refs[key]=patch(next,anchor.p);}else proposed[key]=flowPoint(cv,prev,next,current[key],refs[key]);if(!proposed[key])lost.push(key);}
+if(lost.length){for(const key of lost){marks[key]=marks[key].filter(x=>Math.abs(x.t-t)>.006);marks[key].push({t,p:null,source:'flow'});marks[key].sort((a,b)=>a.t-b.t);}next.delete();stoppedAt=t;reason=`${lost.map(k=>k==='tip'?'バット先端':'グリップ').join('・')}を見失ったため ${t.toFixed(2)}秒で停止しました。ここで2点を再指定し、追跡を再開してください。`;break;}
+for(const key of ['tip','hand']){const anchor=manual[key].find(x=>Math.abs(x.t-t)<.006);if(!anchor){marks[key]=marks[key].filter(x=>Math.abs(x.t-t)>.006);marks[key].push({t,p:proposed[key],source:'flow'});marks[key].sort((a,b)=>a.t-b.t);}}prev.delete();prev=next;current=proposed;n++;stoppedAt=t;$('progress').value=i/total;counts();draw();status(`先端・グリップを補助追跡中 ${Math.round(i/total*100)}%`);await new Promise(r=>setTimeout(r,0));}
+status(reason||(cancelled?'追跡を中止しました。':'補助追跡が完了しました。')+' 再生して先端とグリップが合っているか確認してください。');
+}catch(e){status(e.message);}finally{prev?.delete();busy=false;$('cancel').hidden=true;$('progress').hidden=true;await seekTo(stoppedAt).catch(()=>{});counts();buttons();draw();}};
+
+</script></body></html>
