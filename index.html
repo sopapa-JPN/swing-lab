@@ -1,8 +1,289 @@
 <!doctype html>
-<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Swing Lab | スイング軌道解析</title><meta name="description" content="動画上でバット軌道、手元、肩・ひじ・腰・膝・足の骨格を確認。元映像とマーカー表示を切り替えるスイング解析。"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a1930'/%3E%3Cpath d='M6 24Q16 4 27 10' stroke='%235ce4c0' stroke-width='3' fill='none'/%3E%3Cpath d='M12 24L24 8' stroke='%23ffd477' stroke-width='4'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css"></head>
-<body><header><a class="brand" href="./">SWING<span>LAB</span><small>スイング軌道解析</small></a><label class="file-button">動画・写真を開く<input id="file" type="file" accept="video/*,image/*" hidden></label></header>
-<main><section class="workspace"><div class="stage-head"><span id="filename">動画を読み込んで始めましょう</span><span class="badge">2D ANALYSIS</span></div><div class="view-tabs" role="group" aria-label="表示モード"><button data-view="overlay" class="active" aria-pressed="true">映像 ＋ マーカー</button><button data-view="original" aria-pressed="false">元の映像</button><button data-view="markers" aria-pressed="false">マーカーだけ</button></div><div class="stage" id="stage"><canvas id="canvas" width="960" height="640" aria-label="解析映像。位置指定モードでタップするとマーカーを追加します"></canvas><div id="empty"><div class="empty-symbol">↗</div><h1>スイングを、見えるかたちに。</h1><p>動画や写真を開き、骨格と軌道を重ねて確認できます。</p><label class="file-button">ファイルを選択<input id="empty-file" type="file" accept="video/*,image/*" hidden></label><p class="muted">ファイルはこの端末で処理します。サーバーへ送信しません。</p></div></div><div class="transport"><button id="back" title="0.1秒戻る" disabled>−0.1秒</button><button id="play" class="primary" disabled>再生</button><button id="next" title="0.1秒進む" disabled>＋0.1秒</button><output id="time">00.00 / 00.00</output><select id="speed" aria-label="再生速度"><option value="0.25">0.25倍</option><option value="0.5">0.5倍</option><option value="1" selected>1倍</option></select></div><input id="seek" class="timeline" type="range" min="0" max="1" step="0.01" value="0" aria-label="動画の再生位置" disabled><div class="stage-foot"><span><i class="dot red"></i>先端 <i class="dot blue"></i>手元 <i class="dot mint"></i>骨格</span><button id="snapshot" disabled>表示を画像保存</button></div><p id="status" role="status" aria-live="polite">MP4・MOVなど、ブラウザーで再生できる動画に対応。</p></section>
-<aside><section class="panel"><div class="section-title"><span>01</span><h2>表示するもの</h2></div><label class="switch-row">バット先端の軌道<input id="show-tip" type="checkbox" checked></label><label class="switch-row">手元の位置・軌道<input id="show-hand" type="checkbox" checked></label><label class="switch-row">半透明のスイング面<input id="show-ribbon" type="checkbox" checked></label><label class="switch-row">骨格マーカー<input id="show-pose" type="checkbox" checked></label><p class="muted">肩・ひじ・手首・腰・膝・足首・つま先</p></section>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>Swing Lab | スイング軌道解析</title><meta name="description" content="動画上でバット軌道、手元、肩・ひじ・腰・膝・足の骨格を確認。元映像とマーカー表示を切り替えるスイング解析。"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a1930'/%3E%3Cpath d='M6 24Q16 4 27 10' stroke='%235ce4c0' stroke-width='3' fill='none'/%3E%3Cpath d='M12 24L24 8' stroke='%23ffd477' stroke-width='4'/%3E%3C/svg%3E"><link rel="stylesheet" href="./style.css"><meta name="theme-color" content="#0a1930">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Swing Lab">
+<style>
+/* ===== Swing Lab mobile layer ===== */
+:root{
+  --mobile-gap:12px;
+  --tap:48px;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;}
+body{margin:0;min-width:0;overflow-x:hidden;-webkit-tap-highlight-color:transparent;}
+button,input,select,label{font:inherit;}
+button,.file-button,.subtle{touch-action:manipulation;}
+canvas{max-width:100%;height:auto;display:block;touch-action:none;}
+img,video{max-width:100%;}
+
+/* iPhone / Android landscape & portrait safety */
+body{
+  padding-left:env(safe-area-inset-left);
+  padding-right:env(safe-area-inset-right);
+}
+header{
+  padding-top:max(10px, env(safe-area-inset-top));
+}
+footer{
+  padding-bottom:max(14px, env(safe-area-inset-bottom));
+}
+
+/* Make the existing desktop UI robust even if the base CSS is narrow */
+main,.workspace,aside,.panel,.stage,.transport,.stage-foot,.view-tabs,.range-fields,.pair{
+  min-width:0;
+}
+#filename{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.stage{overflow:hidden;}
+#canvas{width:100%;height:auto;}
+.timeline{width:100%;}
+button,select,input[type="number"],.file-button,.subtle{
+  min-height:44px;
+}
+
+@media (max-width: 820px){
+  body{font-size:15px;}
+  header{
+    position:sticky;
+    top:0;
+    z-index:30;
+    display:flex !important;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding-left:14px !important;
+    padding-right:14px !important;
+    padding-bottom:10px !important;
+    backdrop-filter:blur(12px);
+    -webkit-backdrop-filter:blur(12px);
+  }
+  .brand{min-width:0;}
+  .brand small{display:none !important;}
+  header>.file-button{
+    flex:0 0 auto;
+    min-height:44px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    padding:0 14px !important;
+    white-space:nowrap;
+  }
+
+  main{
+    display:block !important;
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+    padding:10px 10px calc(18px + env(safe-area-inset-bottom)) !important;
+  }
+  .workspace,aside{
+    width:100% !important;
+    max-width:none !important;
+    margin:0 !important;
+  }
+  aside{
+    display:block !important;
+    margin-top:12px !important;
+  }
+  .panel{
+    margin:0 0 12px !important;
+    padding:16px !important;
+    border-radius:16px !important;
+  }
+
+  .stage-head{
+    display:flex !important;
+    align-items:center;
+    gap:8px;
+    padding:10px 2px !important;
+  }
+  #filename{flex:1 1 auto;}
+  .badge{flex:0 0 auto;font-size:11px;}
+
+  .view-tabs{
+    display:grid !important;
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+    gap:6px !important;
+    width:100%;
+    margin-bottom:8px !important;
+  }
+  .view-tabs button{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:44px;
+    padding:8px 4px !important;
+    font-size:12px !important;
+    line-height:1.2;
+  }
+
+  .stage{
+    width:100% !important;
+    border-radius:14px !important;
+    aspect-ratio:3/2;
+    min-height:0 !important;
+    position:relative;
+  }
+  #canvas{
+    width:100% !important;
+    height:100% !important;
+    object-fit:contain;
+  }
+  #empty{
+    padding:18px 14px !important;
+    text-align:center;
+  }
+  #empty h1{
+    font-size:clamp(20px,6vw,28px) !important;
+    line-height:1.2;
+    margin:8px 0 !important;
+  }
+  #empty p{margin:7px 0 !important;}
+  #empty .file-button{
+    display:flex !important;
+    width:min(100%,280px) !important;
+    margin:14px auto 8px !important;
+    align-items:center;
+    justify-content:center;
+    min-height:50px;
+  }
+
+  .transport{
+    display:grid !important;
+    grid-template-columns:1fr 1.15fr 1fr !important;
+    gap:8px !important;
+    align-items:center;
+    margin-top:10px !important;
+  }
+  .transport button{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:50px;
+    padding:8px 4px !important;
+  }
+  #time{
+    grid-column:1 / 3;
+    order:5;
+    text-align:left;
+    font-variant-numeric:tabular-nums;
+    padding:2px 2px;
+  }
+  #speed{
+    grid-column:3;
+    order:6;
+    width:100% !important;
+    min-height:44px;
+  }
+  .timeline{
+    margin:10px 0 6px !important;
+    min-height:34px;
+    accent-color:currentColor;
+  }
+
+  .stage-foot{
+    display:flex !important;
+    flex-wrap:wrap;
+    gap:8px 10px;
+    align-items:center;
+    justify-content:space-between;
+    padding-top:8px !important;
+  }
+  .stage-foot>span{
+    flex:1 1 180px;
+    font-size:12px;
+    line-height:1.6;
+  }
+  #snapshot{
+    flex:1 1 150px;
+    min-height:46px;
+  }
+  #status{
+    font-size:12px !important;
+    line-height:1.55;
+    overflow-wrap:anywhere;
+  }
+
+  .section-title{display:flex !important;align-items:center;gap:10px;}
+  .section-title h2{font-size:18px !important;}
+  .switch-row{
+    min-height:50px;
+    display:flex !important;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .switch-row input[type="checkbox"]{
+    width:22px;
+    height:22px;
+    flex:0 0 auto;
+  }
+  .wide{
+    width:100% !important;
+    min-height:50px !important;
+  }
+  .range-fields{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:10px !important;
+  }
+  .range-fields label{min-width:0;}
+  .range-fields input{
+    width:100% !important;
+    min-height:48px;
+    font-size:16px; /* prevent iOS auto zoom */
+  }
+  #point{
+    width:100% !important;
+    min-height:50px;
+    font-size:16px;
+  }
+  .pair{
+    display:grid !important;
+    grid-template-columns:1fr 1fr !important;
+    gap:8px !important;
+  }
+  .pair button{
+    width:100% !important;
+    min-width:0 !important;
+    min-height:50px;
+    padding-left:8px !important;
+    padding-right:8px !important;
+  }
+  progress{width:100%;height:14px;}
+  #counts{display:block;margin-top:10px;}
+  .muted{line-height:1.55;}
+
+  footer{
+    margin:0 !important;
+    padding-left:16px !important;
+    padding-right:16px !important;
+    font-size:11px !important;
+    line-height:1.5;
+    text-align:center;
+  }
+}
+
+@media (max-width: 380px){
+  header{padding-left:10px !important;padding-right:10px !important;}
+  .brand{font-size:14px !important;}
+  header>.file-button{padding:0 10px !important;font-size:13px;}
+  main{padding-left:8px !important;padding-right:8px !important;}
+  .view-tabs button{font-size:11px !important;}
+  .transport{gap:6px !important;}
+  .transport button{font-size:13px !important;}
+}
+
+@media (orientation: landscape) and (max-height: 560px){
+  header{position:static;}
+  .stage{aspect-ratio:16/9;}
+}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{scroll-behavior:auto !important;transition:none !important;animation:none !important;}
+}
+</style></head>
+<body><header><a class="brand" href="./">SWING<span>LAB</span><small>スイング軌道解析</small></a><button id="choose-media" type="button" class="file-button">動画を選ぶ</button><input id="file" type="file" accept="video/*,image/*" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true"></header>
+<main><section class="workspace"><div class="stage-head"><span id="filename">動画を読み込んで始めましょう</span><span class="badge">2D ANALYSIS</span></div><div class="view-tabs" role="group" aria-label="表示モード"><button data-view="overlay" class="active" aria-pressed="true">映像 ＋ マーカー</button><button data-view="original" aria-pressed="false">元の映像</button><button data-view="markers" aria-pressed="false">マーカーだけ</button></div><div class="stage" id="stage"><canvas id="canvas" width="960" height="640" aria-label="解析映像。位置指定モードでタップするとマーカーを追加します"></canvas><div id="empty"><div class="empty-symbol">↗</div><h1>スイングを、見えるかたちに。</h1><p>動画や写真を開き、骨格と軌道を重ねて確認できます。</p><button id="choose-media-empty" type="button" class="file-button">動画を選ぶ</button><input id="empty-file" type="file" accept="video/*,image/*" style="position:fixed;left:-9999px;width:1px;height:1px;opacity:0" aria-hidden="true"><p class="muted">ファイルはこの端末で処理します。サーバーへ送信しません。</p></div></div><div class="transport"><button id="back" title="0.1秒戻る" disabled>−0.1秒</button><button id="play" class="primary" disabled>再生</button><button id="next" title="0.1秒進む" disabled>＋0.1秒</button><output id="time">00.00 / 00.00</output><select id="speed" aria-label="再生速度"><option value="0.25">0.25倍</option><option value="0.5">0.5倍</option><option value="1" selected>1倍</option></select></div><input id="seek" class="timeline" type="range" min="0" max="1" step="0.01" value="0" aria-label="動画の再生位置" disabled><div class="stage-foot"><span><i class="dot red"></i>先端 <i class="dot blue"></i>手元 <i class="dot mint"></i>骨格</span><button id="snapshot" disabled>表示を画像保存</button></div><p id="status" role="status" aria-live="polite">MP4・MOVなど、ブラウザーで再生できる動画に対応。</p></section>
+<aside><section class="panel"><div class="section-title"><span>01</span><h2>表示するもの</h2></div><label class="switch-row">バット先端の軌道<input id="show-tip" type="checkbox" checked></label><label class="switch-row">手元の位置・軌道<input id="show-hand" type="checkbox" checked></label><label class="switch-row">半透明のスイング面<input id="show-ribbon" type="checkbox" checked></label><label class="switch-row">骨格マーカー<input id="show-pose" type="checkbox" checked></label><label class="switch-row">解析情報を動画に表示<input id="show-hud" type="checkbox" checked></label><p class="muted">肩・ひじ・手首・腰・膝・足首・つま先</p></section>
 <section class="panel"><div class="section-title"><span>02</span><h2>骨格を検出</h2></div><p>複数人が映るときは、打者の腰付近を選択してください。</p><button id="person" class="wide" disabled>打者を選択する</button><div class="range-fields"><label>開始（秒）<input id="from" type="number" min="0" step="0.1" value="0"></label><label>終了（秒）<input id="to" type="number" min="0" step="0.1" value="10"></label></div><button id="analyze" class="primary wide" disabled>骨格を自動検出</button><button id="cancel" class="wide" hidden>検出を中止</button><progress id="progress" max="1" value="0" hidden></progress><p class="muted">初回は検出モデルを読み込みます。速い動きや重なりは補正してください。</p></section>
-<section class="panel"><div class="section-title"><span>03</span><h2>位置を指定・補正</h2></div><label for="point">指定する場所</label><select id="point" class="wide"><option value="tip">バット先端</option><option value="hand">手元（グリップ）</option><optgroup label="骨格の補正"><option value="11">左肩</option><option value="12">右肩</option><option value="13">左ひじ</option><option value="14">右ひじ</option><option value="15">左手首</option><option value="16">右手首</option><option value="23">左腰</option><option value="24">右腰</option><option value="25">左膝</option><option value="26">右膝</option><option value="27">左足首</option><option value="28">右足首</option><option value="31">左つま先</option><option value="32">右つま先</option></optgroup></select><button id="mark" class="wide" disabled>映像をタップして指定</button><div class="pair"><button id="missing" disabled>この位置は見えない</button><button id="undo" disabled>1つ戻す</button></div><p class="muted">先端は手動指定です。0.1秒ずつ進めて点を追加します。0.5秒以内の指定点間を補間し、欠測はつなぎません。左右は本人から見た方向です。</p><output id="counts">先端 0点 / 手元 0点</output></section>
-<section class="panel compact"><button id="save" class="wide" disabled>解析データを保存</button><label class="subtle wide">解析データを読み込む<input id="load" type="file" accept="application/json,.json" hidden></label><button id="record" class="wide" disabled>選択区間を動画保存</button><p class="muted">動画保存は無音のWebM形式です。元映像の音声は含みません。</p></section></aside></main><footer>画面上の2次元表示です。奥行き・カメラ移動は補正せず、速度や角度の実測には使いません。骨格は推定値です。</footer><video id="video" playsinline preload="auto" hidden></video><script type="module" src="./app.js"></script></body></html>
+<section class="panel"><div class="section-title"><span>03</span><h2>バット先端を追跡</h2></div><div class="tip-guide"><b>おすすめ手順</b><span>① 骨格を検出</span><span>② スイング開始付近で先端を1回タップ</span><span>③ 「先端を自動追跡」を押す</span></div><label for="point">指定・補正する場所</label><select id="point" class="wide"><option value="tip">バット先端</option><option value="hand">手元（グリップ）</option><optgroup label="骨格の補正"><option value="11">左肩</option><option value="12">右肩</option><option value="13">左ひじ</option><option value="14">右ひじ</option><option value="15">左手首</option><option value="16">右手首</option><option value="23">左腰</option><option value="24">右腰</option><option value="25">左膝</option><option value="26">右膝</option><option value="27">左足首</option><option value="28">右足首</option><option value="31">左つま先</option><option value="32">右つま先</option></optgroup></select><button id="mark" class="wide" disabled>映像をタップして指定・補正</button><button id="track-tip" class="primary wide" disabled>バット先端を自動追跡</button><progress id="tip-progress" max="1" value="0" hidden></progress><p id="tip-track-note" class="muted">高速スイングは30fps相当で追跡します。外れた場所だけ先端をタップして補正し、もう一度自動追跡すると補正点を優先します。</p><div class="pair"><button id="missing" disabled>この位置は見えない</button><button id="undo" disabled>1つ戻す</button></div><output id="counts">先端 0点 / 手元 0点</output></section>
+<section class="panel compact"><button id="save" class="wide" disabled>解析データを保存</button><label class="subtle wide">解析データを読み込む<input id="load" type="file" accept="application/json,.json" hidden></label><button id="record" class="wide" disabled>選択区間を動画保存</button><p class="muted">動画保存は無音です。対応ブラウザーではMP4、その他はWebMで保存します。元映像の音声は含みません。</p></section></aside></main><footer>画面上の2次元表示です。奥行き・カメラ移動は補正せず、速度や角度の実測には使いません。骨格は推定値です。</footer><video id="video" playsinline preload="auto" hidden></video><script type="module" src="./app.js"></script></body></html>
